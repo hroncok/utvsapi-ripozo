@@ -10,6 +10,7 @@ from sqlalchemy.orm import relationship
 app = Flask(__name__)
 url = URL('mysql', query={'read_default_file': './mysql.cnf'})
 app.config['SQLALCHEMY_DATABASE_URI'] = url
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 session_handler = SessionHandler(db.session)
 resources = []
