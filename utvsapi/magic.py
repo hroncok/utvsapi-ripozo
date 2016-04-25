@@ -24,7 +24,7 @@ def fk_magic(cls, fields):
         unfk = fk[3:]
         setattr(cls, unfk,
                 relationship(unfk.title(),
-                             foreign_keys=(cls.__dict__[fk],)))
+                             foreign_keys=(getattr(cls, fk),)))
         rels.append(Relationship(unfk,
                                  property_map={fk: 'id_' + unfk},
                                  relation=unfk.title() + 'Resource'))
