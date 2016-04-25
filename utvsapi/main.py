@@ -1,7 +1,7 @@
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask_ripozo import FlaskDispatcher
-from ripozo import restmixins, ListRelationship, Relationship, adapters, apimethod
+from ripozo import restmixins, Relationship, adapters, apimethod
 from ripozo_sqlalchemy import AlchemyManager, SessionHandler
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import relationship
@@ -10,34 +10,36 @@ app = Flask(__name__)
 url = URL('mysql', query={'read_default_file': './mysql.cnf'})
 app.config['SQLALCHEMY_DATABASE_URI'] = url
 db = SQLAlchemy(app)
-
-
-PAGINATE_BY = 20
-
-resources = []
 session_handler = SessionHandler(db.session)
+resources = []
 
 
-def register(cls):
-    '''Let's not code N*2 useless classes'''
-    fields = tuple(field for field in cls.__dict__.keys() if not field.startswith('_'))
-    pks = tuple(field for field in fields if field.startswith('id_'))
-    
-    # This magic creates links
+def fk_magic(cls, fields):
+    '''Create links automagically'''
     fks = tuple(field for field in fields if field.startswith('fk_'))
     rels = []
     for fk in fks:
         unfk = fk[3:]
-        setattr(cls, unfk, relationship(unfk.title(), foreign_keys=(cls.__dict__[fk],)))
-        rels.append(Relationship(unfk, property_map={fk: 'id_' + unfk}, relation=unfk.title() + 'Resource'))
-    rels = tuple(rels)  # must be a tuple
+        setattr(cls, unfk,
+                relationship(unfk.title(),
+                             foreign_keys=(cls.__dict__[fk],)))
+        rels.append(Relationship(unfk,
+                                 property_map={fk: 'id_' + unfk},
+                                 relation=unfk.title() + 'Resource'))
+    return tuple(rels)  # must be a tuple
+
+def register(cls, paginate_by=20):
+    '''Create default Manager and Resource class for model and register it'''
+    fields = tuple(f for f in cls.__dict__.keys() if not f.startswith('_'))
+    pks = tuple(f for f in fields if f.startswith('id_'))
+    rels = fk_magic(cls, fields)
 
 
     manager_cls = type(cls.__name__ + 'Manager',
                        (AlchemyManager,),
                        {'fields': fields,
                         'model': cls,
-                        'paginate_by': PAGINATE_BY})
+                        'paginate_by': paginate_by})
 
     resource_cls = type(cls.__name__ + 'Resource',
                        (restmixins.RetrieveRetrieveList,),
