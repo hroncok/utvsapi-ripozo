@@ -19,12 +19,12 @@ def fk_magic(cls, fields):
                                  relation=unfk.title() + 'Resource'))
     return tuple(rels)  # must be a tuple
 
+
 def register(cls, paginate_by=20):
     '''Create default Manager and Resource class for model and register it'''
     fields = tuple(f for f in cls.__dict__.keys() if not f.startswith('_'))
     pks = tuple(f for f in fields if f.startswith('id_'))
     rels = fk_magic(cls, fields)
-
 
     manager_cls = type(cls.__name__ + 'Manager',
                        (AlchemyManager,),
@@ -33,11 +33,11 @@ def register(cls, paginate_by=20):
                         'paginate_by': paginate_by})
 
     resource_cls = type(cls.__name__ + 'Resource',
-                       (restmixins.RetrieveRetrieveList,),
-                       {'manager': manager_cls(session_handler),
-                        'resource_name': cls.__name__.lower() + 's',
-                        'pks': pks,
-                        '_relationships': rels})
+                        (restmixins.RetrieveRetrieveList,),
+                        {'manager': manager_cls(session_handler),
+                         'resource_name': cls.__name__.lower() + 's',
+                         'pks': pks,
+                         '_relationships': rels})
 
     resources.append(resource_cls)
     return cls
@@ -113,7 +113,8 @@ class Course(db.Model):
     notice = db.Column(db.String)
     semester = db.Column(db.Integer)
 
-    fk_sport = db.Column('sport', db.Integer, db.ForeignKey('v_sports.id_sport'))
+    fk_sport = db.Column('sport', db.Integer,
+                         db.ForeignKey('v_sports.id_sport'))
     fk_hall = db.Column('hall', db.Integer, db.ForeignKey('v_hall.id_hall'))
     fk_teacher = db.Column('lector', db.Integer,
                            db.ForeignKey('v_lectors.id_lector'))
