@@ -1,3 +1,5 @@
+from ripozo import picky_processor
+
 from utvsapi.magic import db, register, resources
 
 
@@ -53,10 +55,19 @@ class Enrollment(db.Model):
     registration_date = db.Column(db.DateTime)
     tour = db.Column(db.Boolean)
 
-    _kos_code = db.Column('kos_code', db.Boolean)
+    kos_code_flag = db.Column('kos_code', db.Boolean)
 
     fk_course = db.Column('utvs', db.Integer,
                           db.ForeignKey('v_subjects.id_subjects'))
+
+    def _post_kos_code_null(cls, function_name, request, resource):
+        '''This will me called as a function, so no self!'''
+        if not resource.properties['kos_code_flag']:
+            resource.properties['kos_course_code'] = None
+        del resource.properties['kos_code_flag']
+
+    __postprocessors__ = (picky_processor(_post_kos_code_null,
+                                          include=['retrieve']),)
 
 
 @register
@@ -77,3 +88,10 @@ class Course(db.Model):
     fk_hall = db.Column('hall', db.Integer, db.ForeignKey('v_hall.id_hall'))
     fk_teacher = db.Column('lector', db.Integer,
                            db.ForeignKey('v_lectors.id_lector'))
+
+    def _post_day_int(cls, function_name, request, resource):
+        '''This will me called as a function, so no self!'''
+        resource.properties['day'] = int(resource.properties['day'])
+
+    __postprocessors__ = (picky_processor(_post_day_int,
+                                          include=['retrieve']),)

@@ -48,7 +48,11 @@ def register(cls, paginate_by=20):
                         {'manager': manager_cls(session_handler),
                          'resource_name': cls.__name__.lower() + 's',
                          'pks': pks,
-                         '_relationships': rels})
+                         '_relationships': rels,
+                         'preprocessors': getattr(cls, '__preprocessors__',
+                                                  tuple()),
+                         'postprocessors': getattr(cls, '__postprocessors__',
+                                                   tuple())})
 
     resources.append(resource_cls)
     return cls
