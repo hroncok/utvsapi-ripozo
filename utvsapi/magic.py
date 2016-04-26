@@ -26,7 +26,7 @@ def fk_magic(cls, fields):
                 relationship(unfk.title(),
                              foreign_keys=(getattr(cls, fk),)))
         rels.append(Relationship(unfk,
-                                 property_map={fk: 'id_' + unfk},
+                                 property_map={fk: 'id'},
                                  relation=unfk.title() + 'Resource'))
     return tuple(rels)  # must be a tuple
 
@@ -34,7 +34,7 @@ def fk_magic(cls, fields):
 def register(cls, paginate_by=20):
     '''Create default Manager and Resource class for model and register it'''
     fields = tuple(f for f in cls.__dict__.keys() if not f.startswith('_'))
-    pks = tuple(f for f in fields if f.startswith('id_'))
+    pks = ('id',)
     rels = fk_magic(cls, fields)
 
     manager_cls = type(cls.__name__ + 'Manager',

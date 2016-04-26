@@ -5,7 +5,7 @@ from utvsapi.magic import db, register, resources
 class Destination(db.Model):
     __tablename__ = 'v_destination'
 
-    id_destination = db.Column(db.Integer, primary_key=True)
+    id = db.Column('id_destination', db.Integer, primary_key=True)
     name = db.Column(db.String)
     url = db.Column(db.String)
 
@@ -14,7 +14,7 @@ class Destination(db.Model):
 class Hall(db.Model):
     __tablename__ = 'v_hall'
 
-    id_hall = db.Column(db.Integer, primary_key=True)
+    id = db.Column('id_hall', db.Integer, primary_key=True)
     name = db.Column(db.String)
     url = db.Column(db.String)
 
@@ -23,11 +23,11 @@ class Hall(db.Model):
 class Teacher(db.Model):
     __tablename__ = 'v_lectors'
 
-    id_teacher = db.Column('id_lector', db.Integer, primary_key=True)
-    title_before = db.Column(db.String)
-    name = db.Column(db.String)
-    surname = db.Column(db.String)
-    title_behind = db.Column(db.String)
+    id = db.Column('id_lector', db.Integer, primary_key=True)
+    degrees_before = db.Column('title_before', db.String)
+    first_name = db.Column('name', db.String)
+    last_name = db.Column('surname', db.String)
+    degrees_after = db.Column('title_behind', db.String)
     personal_number = db.Column('pers_number', db.String)
     url = db.Column(db.String)
 
@@ -36,9 +36,9 @@ class Teacher(db.Model):
 class Sport(db.Model):
     __tablename__ = 'v_sports'
 
-    id_sport = db.Column(db.Integer, primary_key=True)
-    short = db.Column(db.String)
-    sport = db.Column(db.String)
+    id = db.Column('id_sport', db.Integer, primary_key=True)
+    shortcut = db.Column('short', db.String)
+    name = db.Column('sport', db.String)
     description = db.Column(db.String)
 
 
@@ -46,13 +46,14 @@ class Sport(db.Model):
 class Enrollment(db.Model):
     __tablename__ = 'v_students'
 
-    id_enrollment = db.Column('id_student', db.Integer, primary_key=True)
+    id = db.Column('id_student', db.Integer, primary_key=True)
     personal_number = db.Column(db.Integer)
-    kos_kod = db.Column(db.String)
+    kos_course_code = db.Column('kos_kod', db.String)
     semester = db.Column(db.String)
     registration_date = db.Column(db.DateTime)
     tour = db.Column(db.Boolean)
-    kos_code = db.Column(db.Boolean)
+
+    _kos_code = db.Column('kos_code', db.Boolean)
 
     fk_course = db.Column('utvs', db.Integer,
                           db.ForeignKey('v_subjects.id_subjects'))
@@ -62,12 +63,12 @@ class Enrollment(db.Model):
 class Course(db.Model):
     __tablename__ = 'v_subjects'
 
-    id_course = db.Column('id_subjects', db.Integer,
-                          primary_key=True)
+    id = db.Column('id_subjects', db.Integer,
+                   primary_key=True)
     shortcut = db.Column(db.String)
     day = db.Column(db.Integer)
-    begin = db.Column(db.String)
-    end = db.Column(db.String)
+    starts_at = db.Column('begin', db.String)
+    ends_at = db.Column('end', db.String)
     notice = db.Column(db.String)
     semester = db.Column(db.Integer)
 
