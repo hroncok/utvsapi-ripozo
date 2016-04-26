@@ -6,6 +6,8 @@ from ripozo_sqlalchemy import SessionHandler
 from sqlalchemy.engine.url import URL
 from sqlalchemy.orm import relationship
 
+from utvsapi import auth
+
 
 app = Flask(__name__)
 url = URL('mysql', query={'read_default_file': './mysql.cnf'})
@@ -43,16 +45,17 @@ def register(cls, paginate_by=20):
                         'model': cls,
                         'paginate_by': paginate_by})
 
+    pres = getattr(cls, '__preprocessors__', tuple()) + (auth.preprocessor,)
+    posts = getattr(cls, '__postprocessors__', tuple())
+
     resource_cls = type(cls.__name__ + 'Resource',
                         (restmixins.RetrieveRetrieveList,),
                         {'manager': manager_cls(session_handler),
                          'resource_name': cls.__name__.lower() + 's',
                          'pks': pks,
                          '_relationships': rels,
-                         'preprocessors': getattr(cls, '__preprocessors__',
-                                                  tuple()),
-                         'postprocessors': getattr(cls, '__postprocessors__',
-                                                   tuple())})
+                         'preprocessors': pres,
+                         'postprocessors': posts})
 
     resources.append(resource_cls)
     return cls
