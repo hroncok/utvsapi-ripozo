@@ -1,6 +1,6 @@
 from ripozo import picky_processor
 
-from utvsapi.magic import db, register, resources
+from utvsapi.magic import db, register, resources, get_related
 
 
 @register
@@ -30,8 +30,16 @@ class Teacher(db.Model):
     first_name = db.Column('name', db.String)
     last_name = db.Column('surname', db.String)
     degrees_after = db.Column('title_behind', db.String)
-    personal_number = db.Column('pers_number', db.String)
+    personal_number = db.Column('pers_number', db.Integer)
     url = db.Column(db.String)
+
+    def _post_pnum_int(cls, function_name, request, resource):
+        '''This will me called as a function, so no self!'''
+        resource.properties['personal_number'] = int(
+            resource.properties['personal_number'])
+
+    __postprocessors__ = (picky_processor(_post_pnum_int,
+                                          include=['retrieve']),)
 
 
 @register
@@ -68,6 +76,57 @@ class Enrollment(db.Model):
 
     __postprocessors__ = (picky_processor(_post_kos_code_null,
                                           include=['retrieve']),)
+
+    @staticmethod
+    def _visible(resource, pnum):
+        '''Checks if the resource should be visible for an user'''
+        # The student wants's his/her enrollment
+        if resource.properties['personal_number'] == pnum:
+            return True
+        # Or it is a teacher looking for his/her student's enrollments
+        course = get_related(resource, 'course')
+        if course:
+            teacher = get_related(course, 'teacher')
+            if teacher:
+                # need to
+                if teacher.properties['personal_number'] == pnum:
+                    return True
+        return False
+
+    def __permission_func__(function_name, request, resource):
+        '''This will me called as a function, so no self!'''
+        scopes = request.client_info['scopes']
+
+        # can read anything
+        if 'cvut:utvs:enrollments:all' in scopes:
+            return True
+
+        # check the personal numbers
+        if 'cvut:utvs:enrollments:by-role' in scopes:
+            pnum = request.client_info['personal_number']
+            # We are talking one item
+            if function_name == 'retrieve':
+                return Enrollment._visible(resource, pnum)
+            # Ar the list of them
+            elif function_name == 'retrieve_list':
+                many = resource.related_resources[0].resource
+                # Remove all the things that should remain hidden
+                # This messes up the pagination a lot
+                # And it is also slow as hell to perform this on all resources
+                # because it's not happening on the SQL level
+                # For student's requests, try /enrollments?personal_number=XYZ
+                # this will speed it up
+                to_remove = []
+                for idx, res in enumerate(many):
+                    if not Enrollment._visible(res, pnum):
+                        to_remove.append(idx)
+                for idx in reversed(to_remove):
+                    del many[idx]
+                # display the list, or what's left of it
+                return True
+
+        # we run out of options, sorry
+        return False
 
 
 @register
