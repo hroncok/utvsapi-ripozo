@@ -34,7 +34,7 @@ class Teacher(db.Model):
     url = db.Column(db.String)
 
     def _post_pnum_int(cls, function_name, request, resource):
-        '''This will me called as a function, so no self!'''
+        '''This will be called as a function, so no self!'''
         resource.properties['personal_number'] = int(
             resource.properties['personal_number'])
 
@@ -69,7 +69,7 @@ class Enrollment(db.Model):
                           db.ForeignKey('v_subjects.id_subjects'))
 
     def _post_kos_code_null(cls, function_name, request, resource):
-        '''This will me called as a function, so no self!'''
+        '''This will be called as a function, so no self!'''
         if not resource.properties['kos_code_flag']:
             resource.properties['kos_course_code'] = None
         del resource.properties['kos_code_flag']
@@ -94,7 +94,7 @@ class Enrollment(db.Model):
         return False
 
     def __permission_func__(function_name, request, resource):
-        '''This will me called as a function, so no self!'''
+        '''This will be called as a function, so no self!'''
         scopes = request.client_info['scopes']
 
         # can read anything
@@ -149,7 +149,7 @@ class Course(db.Model):
                            db.ForeignKey('v_lectors.id_lector'))
 
     def _post_day_int(cls, function_name, request, resource):
-        '''This will me called as a function, so no self!'''
+        '''This will be called as a function, so no self!'''
         resource.properties['day'] = int(resource.properties['day'])
 
     __postprocessors__ = (picky_processor(_post_day_int,
