@@ -52,12 +52,11 @@ def preprocessor(cls, function_name, request):
         raise exceptions.UnauthorizedException('Token not valid. '
                                                'Please provide a valid token.')
 
-    # add the information to the request
+    # default behavior for all of our resources
+    if 'cvut:utvs:general:read' not in info['scopes']:
+        raise exceptions.ForbiddenException('Permission denied. '
+                                            'You need '
+                                            'cvut:utvs:general:read scope.')
+
+    # add the information to the request, for further pre/postprocessors
     request.client_info = info
-
-
-def postprocessor(cls, function_name, request, resource):
-    if getattr(request, 'bypass_auth', False):
-        return
-    if not cls.permission_func(function_name, request, resource):
-        raise exceptions.ForbiddenException('Permission denied.')

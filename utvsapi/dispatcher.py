@@ -6,7 +6,7 @@ from utvsapi.models import resources
 
 
 dispatcher = FlaskDispatcher(app, url_prefix='/')
-dispatcher.register_resources(*resources)
+dispatcher.register_resources(*resources.values())
 dispatcher.register_adapters(adapters.HalAdapter,
                              adapters.SirenAdapter,
                              adapters.JSONAPIAdapter,

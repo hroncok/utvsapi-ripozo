@@ -1,6 +1,7 @@
-from ripozo import picky_processor
+from ripozo import picky_processor, RequestContainer
 
-from utvsapi.magic import db, register, resources, get_related
+from utvsapi import exceptions
+from utvsapi.magic import db, register, resources
 
 
 @register
@@ -41,6 +42,18 @@ class Teacher(db.Model):
     __postprocessors__ = (picky_processor(_post_pnum_int,
                                           include=['retrieve']),)
 
+    @classmethod
+    def _is_teacher(cls, pnum):
+        '''Checks if the personal number is a teacher'''
+        request = RequestContainer(url_params={'personal_number': pnum})
+        # We don't want to cycle trough auth again
+        request.bypass_auth = True
+        try:
+            resources[cls.__name__].retrieve(request)
+            return True
+        except exceptions.NotFoundException:
+            return False
+
 
 @register
 class Sport(db.Model):
@@ -68,65 +81,86 @@ class Enrollment(db.Model):
     fk_course = db.Column('utvs', db.Integer,
                           db.ForeignKey('v_subjects.id_subjects'))
 
+    def _prepost_auth_logic(cls, message, request, resource=None):
+        '''
+        This is both pre- and postprocessor (cool, huh?).
+        For retrieve_list, we need to filter this in the beginning.
+        For retrieve we need to have the resource.
+
+        It's the logic behind permissions.
+
+        Only allows to see enrollment(s) for:
+
+         * cvut:utvs:enrollments:all scope
+         * cvut:utvs:enrollments:by-role scope for:
+          * teachers
+          * students (any non-teacher with personal number)
+
+        If the retrieve_list request comes from a student,
+        filter it immediately to boost performance.
+        This will hide all the enrollments a student shouldn't see.
+
+        If the retrieve request comes from a student,
+        decide whether it belongs to that student.
+
+        This will be called as a function, so no self!
+        '''
+        scopes = request.client_info['scopes']
+
+        # can read anything
+        if 'cvut:utvs:enrollments:all' in scopes:
+            return
+
+        # it's a person
+        if 'cvut:utvs:enrollments:by-role' in scopes:
+            pnum = request.client_info['personal_number']
+            if not pnum:
+                raise exceptions.ForbiddenException(
+                    'Permission denied. You have no personal_number and you '
+                    'don\'t have cvut:utvs:enrollments:all scope')
+
+            if resource:
+                # this is one resource
+                # you are the student of this resource
+                # this is a faster check than the teacher check,
+                # so it comes first
+                if pnum == resource.properties['personal_number']:
+                    return
+
+            if Teacher._is_teacher(pnum):
+                # you are a teacher
+                return
+
+            if not resource:
+                # this is a list of resources
+                # you are a person, but not a teacher
+                # we'll filter all the enrollments by personal_number
+                # (black magic prevents query_args from being updated,
+                # so replace them instead)
+                query_args = request.query_args.copy()
+                query_args.update({'personal_number': [pnum]})
+                request.query_args = query_args
+                return
+
+        # out of options
+        if resource:
+            message = 'You cannot see this enrollment.'
+        else:
+            message = 'You cannot see enrollments.'
+        raise exceptions.ForbiddenException('Permission denied. ' + message)
+
     def _post_kos_code_null(cls, function_name, request, resource):
         '''This will be called as a function, so no self!'''
         if not resource.properties['kos_code_flag']:
             resource.properties['kos_course_code'] = None
         del resource.properties['kos_code_flag']
 
+    __preprocessors__ = (picky_processor(_prepost_auth_logic,
+                                         include=['retrieve_list']),)
     __postprocessors__ = (picky_processor(_post_kos_code_null,
+                                          include=['retrieve']),
+                          picky_processor(_prepost_auth_logic,
                                           include=['retrieve']),)
-
-    @staticmethod
-    def _visible(resource, pnum):
-        '''Checks if the resource should be visible for an user'''
-        # The student wants's his/her enrollment
-        if resource.properties['personal_number'] == pnum:
-            return True
-        # Or it is a teacher looking for his/her student's enrollments
-        course = get_related(resource, 'course')
-        if course:
-            teacher = get_related(course, 'teacher')
-            if teacher:
-                # need to
-                if teacher.properties['personal_number'] == pnum:
-                    return True
-        return False
-
-    def __permission_func__(function_name, request, resource):
-        '''This will be called as a function, so no self!'''
-        scopes = request.client_info['scopes']
-
-        # can read anything
-        if 'cvut:utvs:enrollments:all' in scopes:
-            return True
-
-        # check the personal numbers
-        if 'cvut:utvs:enrollments:by-role' in scopes:
-            pnum = request.client_info['personal_number']
-            # We are talking one item
-            if function_name == 'retrieve':
-                return Enrollment._visible(resource, pnum)
-            # Ar the list of them
-            elif function_name == 'retrieve_list':
-                many = resource.related_resources[0].resource
-                # Remove all the things that should remain hidden
-                # This messes up the pagination a lot
-                # And it is also slow as hell to perform this on all resources
-                # because it's not happening on the SQL level
-                # For student's requests, try /enrollments?personal_number=XYZ
-                # this will speed it up
-                to_remove = []
-                for idx, res in enumerate(many):
-                    if not Enrollment._visible(res, pnum):
-                        to_remove.append(idx)
-                for idx in reversed(to_remove):
-                    del many[idx]
-                # display the list, or what's left of it
-                return True
-
-        # we run out of options, sorry
-        return False
 
 
 @register

@@ -1,7 +1,7 @@
-from ripozo import exceptions
+from ripozo.exceptions import *
 
 
-class UnauthorizedException(exceptions.RestException):
+class UnauthorizedException(RestException):
     '''
     This exception is raised when the request equires user authentication
     but it was not provided
@@ -10,7 +10,7 @@ class UnauthorizedException(exceptions.RestException):
         super().__init__(message, status_code=status_code, *args, **kwargs)
 
 
-class ForbiddenException(exceptions.RestException):
+class ForbiddenException(RestException):
     '''
     This exception is raised when the request is not authorized to see the data
     '''

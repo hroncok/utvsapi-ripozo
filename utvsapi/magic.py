@@ -1,6 +1,6 @@
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask import Flask
-from ripozo import restmixins, Relationship, RequestContainer
+from ripozo import restmixins, Relationship
 from ripozo_sqlalchemy import AlchemyManager
 from ripozo_sqlalchemy import SessionHandler
 from sqlalchemy.engine.url import URL
@@ -15,7 +15,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 session_handler = SessionHandler(db.session)
-resources = []
+resources = {}
 
 
 def default_permission_func(function_name, request, resource):
@@ -50,9 +50,8 @@ def register(cls, paginate_by=20):
                         'model': cls,
                         'paginate_by': paginate_by})
 
-    pres = getattr(cls, '__preprocessors__', tuple()) + (auth.preprocessor,)
-    posts = getattr(cls, '__postprocessors__', tuple()) + (auth.postprocessor,)
-    pfunc = getattr(cls, '__permission_func__', default_permission_func)
+    pres = (auth.preprocessor,) + getattr(cls, '__preprocessors__', tuple())
+    posts = getattr(cls, '__postprocessors__', tuple())
 
     resource_cls = type(cls.__name__ + 'Resource',
                         (restmixins.RetrieveRetrieveList,),
@@ -61,23 +60,7 @@ def register(cls, paginate_by=20):
                          'pks': pks,
                          '_relationships': rels,
                          'preprocessors': pres,
-                         'postprocessors': posts,
-                         'permission_func': pfunc})
+                         'postprocessors': posts})
 
-    resources.append(resource_cls)
+    resources[cls.__name__] = resource_cls
     return cls
-
-
-def get_related(resource, name):
-    '''Get related resource of a resource by name'''
-    for related_resource in resource.related_resources:
-        if related_resource.name == name:
-            resource = related_resource.resource
-            # Unfortunately this resource only contains it's ID
-            # So we need to construct a request for the full resource
-            request = RequestContainer(url_params=resource.properties)
-            # We don't want to cycle trough auth again
-            request.bypass_auth = True
-            # Get the "full" resource
-            resource = resource.retrieve(request)
-            return resource
