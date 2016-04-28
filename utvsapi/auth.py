@@ -26,8 +26,10 @@ def preprocessor(cls, function_name, request):
                                                'Authorization: Bearer {token}')
     c = TokenClient(check_token_uri='http://localhost:8080/token',
                     usermap_uri='http://localhost:8080/user')
-    info = c.token_to_info(token)
-    if not info:
+    info = None
+    try:
+        info = c.token_to_info(token)
+    except:
         raise exceptions.UnauthorizedException('Token not valid. '
                                                'Please provide a valid token.')
 
