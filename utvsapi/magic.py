@@ -18,11 +18,6 @@ session_handler = SessionHandler(db.session)
 resources = {}
 
 
-def default_permission_func(function_name, request, resource):
-    '''Default permission handling for almost all resources'''
-    return 'cvut:utvs:general:read' in request.client_info['scopes']
-
-
 def fk_magic(cls, fields):
     '''Create links automagically'''
     fks = tuple(field for field in fields if field.endswith('_id'))
