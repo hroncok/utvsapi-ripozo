@@ -14,11 +14,12 @@ To use this, create file named `mysql.cnf` with your MySQL credentials, see an e
 
 This has been developed and run on Python 3 only, legacy Python might not work.
 
-Install `flask-ripozo`, `ripozo-sqlalchemy`, `Flask-SQLAlchemy` and `mysqlclient` (you'll need mysql devel package for that). You might do it with virtualenv:
+Install `utvsapitoken`, `flask-ripozo`, `ripozo-sqlalchemy`, `Flask-SQLAlchemy`
+and `mysqlclient` (you'll need mysql devel package for that). You might do it with virtualenv:
 
     pyvenv venv
     . venv/bin/activate
-    pip install flask-ripozo ripozo-sqlalchemy Flask-SQLAlchemy mysqlclient
+    pip install utvsapitoken flask-ripozo ripozo-sqlalchemy Flask-SQLAlchemy mysqlclient
 
 Start the service in debug mode:
 
