@@ -138,6 +138,18 @@ class Enrollment(db.Model):
                 # (black magic prevents query_args from being updated,
                 # so replace them instead)
                 query_args = request.query_args.copy()
+                try:
+                    filter = query_args['personal_number'][0]
+                    if int(filter) != pnum:
+                        raise ValueError
+                except (IndexError, KeyError):
+                    pass
+                except ValueError:
+                    raise exceptions.ForbiddenException(
+                        'Permission denied. '
+                        'You cannot query on personal_number other then '
+                        'your own.'
+                    )
                 query_args.update({'personal_number': [pnum]})
                 request.query_args = query_args
                 return
