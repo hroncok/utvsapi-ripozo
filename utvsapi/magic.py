@@ -25,10 +25,10 @@ def default_permission_func(function_name, request, resource):
 
 def fk_magic(cls, fields):
     '''Create links automagically'''
-    fks = tuple(field for field in fields if field.startswith('fk_'))
+    fks = tuple(field for field in fields if field.endswith('_id'))
     rels = []
     for fk in fks:
-        unfk = fk[3:]
+        unfk = fk[:-3]
         setattr(cls, unfk,
                 relationship(unfk.title(),
                              foreign_keys=(getattr(cls, fk),)))

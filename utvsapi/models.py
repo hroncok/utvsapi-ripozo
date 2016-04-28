@@ -78,7 +78,7 @@ class Enrollment(db.Model):
 
     kos_code_flag = db.Column('kos_code', db.Boolean)
 
-    fk_course = db.Column('utvs', db.Integer,
+    course_id = db.Column('utvs', db.Integer,
                           db.ForeignKey('v_subjects.id_subjects'))
 
     def _prepost_auth_logic(cls, message, request, resource=None):
@@ -188,10 +188,10 @@ class Course(db.Model):
     notice = db.Column(db.String)
     semester = db.Column(db.Integer)
 
-    fk_sport = db.Column('sport', db.Integer,
+    sport_id = db.Column('sport', db.Integer,
                          db.ForeignKey('v_sports.id_sport'))
-    fk_hall = db.Column('hall', db.Integer, db.ForeignKey('v_hall.id_hall'))
-    fk_teacher = db.Column('lector', db.Integer,
+    hall_id = db.Column('hall', db.Integer, db.ForeignKey('v_hall.id_hall'))
+    teacher_id = db.Column('lector', db.Integer,
                            db.ForeignKey('v_lectors.id_lector'))
 
     def _post_day_int(cls, function_name, request, resource):
