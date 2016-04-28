@@ -1,7 +1,7 @@
 from ripozo import picky_processor, RequestContainer
 
 from utvsapi import exceptions
-from utvsapi.magic import db, register, resources
+from utvsapi.magic import db, register, resources, onemany
 
 
 @register
@@ -34,13 +34,13 @@ class Teacher(db.Model):
     personal_number = db.Column('pers_number', db.Integer)
     url = db.Column(db.String)
 
+    @onemany
     def _post_pnum_int(cls, function_name, request, resource):
         '''This will be called as a function, so no self!'''
         resource.properties['personal_number'] = int(
             resource.properties['personal_number'])
 
-    __postprocessors__ = (picky_processor(_post_pnum_int,
-                                          include=['retrieve']),)
+    __postprocessors__ = (_post_pnum_int,)
 
     @classmethod
     def _is_teacher(cls, pnum):
@@ -161,6 +161,7 @@ class Enrollment(db.Model):
             message = 'You cannot see enrollments.'
         raise exceptions.ForbiddenException('Permission denied. ' + message)
 
+    @onemany
     def _post_kos_code_null(cls, function_name, request, resource):
         '''This will be called as a function, so no self!'''
         if not resource.properties['kos_code_flag']:
@@ -169,8 +170,7 @@ class Enrollment(db.Model):
 
     __preprocessors__ = (picky_processor(_prepost_auth_logic,
                                          include=['retrieve_list']),)
-    __postprocessors__ = (picky_processor(_post_kos_code_null,
-                                          include=['retrieve']),
+    __postprocessors__ = (_post_kos_code_null,
                           picky_processor(_prepost_auth_logic,
                                           include=['retrieve']),)
 
@@ -194,9 +194,9 @@ class Course(db.Model):
     teacher_id = db.Column('lector', db.Integer,
                            db.ForeignKey('v_lectors.id_lector'))
 
+    @onemany
     def _post_day_int(cls, function_name, request, resource):
         '''This will be called as a function, so no self!'''
         resource.properties['day'] = int(resource.properties['day'])
 
-    __postprocessors__ = (picky_processor(_post_day_int,
-                                          include=['retrieve']),)
+    __postprocessors__ = (_post_day_int,)

@@ -64,3 +64,17 @@ def register(cls, paginate_by=20):
 
     resources[cls.__name__] = resource_cls
     return cls
+
+
+def onemany(func):
+    '''
+    A decorator for postprocessors in order to run a given function
+    an all resources
+    '''
+    def processor(cls, function_name, request, resource):
+        if function_name == 'retrieve':
+            return func(cls, function_name, request, resource)
+        if function_name == 'retrieve_list':
+            for one in resource.related_resources[0].resource:
+                func(cls, 'retrieve', request, one)
+    return processor
