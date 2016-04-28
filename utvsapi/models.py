@@ -105,14 +105,14 @@ class Enrollment(db.Model):
 
         This will be called as a function, so no self!
         '''
-        scopes = request.client_info['scopes']
+        scope = request.client_info['scope']
 
         # can read anything
-        if 'cvut:utvs:enrollments:all' in scopes:
+        if 'cvut:utvs:enrollments:all' in scope:
             return
 
         # it's a person
-        if 'cvut:utvs:enrollments:by-role' in scopes:
+        if 'cvut:utvs:enrollments:by-role' in scope:
             pnum = request.client_info['personal_number']
             if not pnum:
                 raise exceptions.ForbiddenException(

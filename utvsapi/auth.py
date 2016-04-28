@@ -1,29 +1,6 @@
+from utvsapitoken import TokenClient
+
 from utvsapi import exceptions
-
-
-def token_to_info(token, credentials=None):
-    '''
-    This is a placeholder function that mimics
-    a soon to be made oauth2 token validation and
-    a request to userpmap api for personal number.
-
-    If the token is a number, it will pretend
-    the token is valid and belongs to an user with such personal number.
-
-    If the token is GODGODGOD, it will pretend the token is valid
-    and belongs to a client that can read everything.
-
-    If the token is anything different, it will pretend it is not valid.
-    '''
-    info = {}
-    scopes = ['cvut:utvs:general:read']
-    try:
-        info['personal_number'] = int(token)
-        info['scopes'] = scopes + ['cvut:utvs:enrollments:by-role']
-    except ValueError:
-        if token == 'GODGODGOD':
-            info['scopes'] = scopes + ['cvut:utvs:enrollments:all']
-    return info
 
 
 def headers_to_token(headers, *, authorization='authorization',
@@ -47,13 +24,15 @@ def preprocessor(cls, function_name, request):
         raise exceptions.UnauthorizedException('Token not provided. '
                                                'Use the following header: '
                                                'Authorization: Bearer {token}')
-    info = token_to_info(token)
+    c = TokenClient(check_token_uri='http://localhost:8080/token',
+                    usermap_uri='http://localhost:8080/user')
+    info = c.token_to_info(token)
     if not info:
         raise exceptions.UnauthorizedException('Token not valid. '
                                                'Please provide a valid token.')
 
     # default behavior for all of our resources
-    if 'cvut:utvs:general:read' not in info['scopes']:
+    if 'cvut:utvs:general:read' not in info['scope']:
         raise exceptions.ForbiddenException('Permission denied. '
                                             'You need '
                                             'cvut:utvs:general:read scope.')
