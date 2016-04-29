@@ -26,7 +26,7 @@ def preprocessor(cls, function_name, request):
             'Authorization: Bearer {token}')
     c = TokenClient(check_token_uri='http://localhost:8080/token',
                     usermap_uri='http://localhost:8080/user')
-    info = None
+
     try:
         info = c.token_to_info(token)
     except:
