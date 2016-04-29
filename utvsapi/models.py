@@ -147,7 +147,7 @@ class Enrollment(db.Model):
                 except ValueError:
                     raise exceptions.ForbiddenException(
                         'Permission denied. '
-                        'You cannot query on personal_number other then '
+                        'You cannot query on personal_number other than '
                         'your own.'
                     )
                 query_args.update({'personal_number': [pnum]})
