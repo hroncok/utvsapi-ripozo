@@ -42,18 +42,6 @@ class Teacher(db.Model):
 
     __postprocessors__ = (_post_pnum_int,)
 
-    @classmethod
-    def _is_teacher(cls, pnum):
-        '''Checks if the personal number is a teacher'''
-        request = RequestContainer(url_params={'personal_number': pnum})
-        # We don't want to cycle trough auth again
-        request.bypass_auth = True
-        try:
-            resources[cls.__name__].retrieve(request)
-            return True
-        except exceptions.NotFoundException:
-            return False
-
 
 @register
 class Sport(db.Model):
@@ -111,29 +99,24 @@ class Enrollment(db.Model):
         if 'cvut:utvs:enrollments:all' in scope:
             return
 
-        # it's a person
         if 'cvut:utvs:enrollments:by-role' in scope:
+            if 'B-00000-ZAMESTNANEC' in request.client_info['roles']:
+                return
+
+        if 'cvut:utvs:enrollments:personal' in scope:
             pnum = request.client_info['personal_number']
             if not pnum:
                 raise exceptions.ForbiddenException(
                     'Permission denied. You have no personal_number and you '
-                    'don\'t have cvut:utvs:enrollments:all scope')
+                    'don\'t have cvut:utvs:enrollments:all or :by-role scope')
 
             if resource:
                 # this is one resource
                 # you are the student of this resource
-                # this is a faster check than the teacher check,
-                # so it comes first
                 if pnum == resource.properties['personal_number']:
                     return
-
-            if Teacher._is_teacher(pnum):
-                # you are a teacher
-                return
-
-            if not resource:
+            else:
                 # this is a list of resources
-                # you are a person, but not a teacher
                 # we'll filter all the enrollments by personal_number
                 # (black magic prevents query_args from being updated,
                 # so replace them instead)
