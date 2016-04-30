@@ -17,8 +17,6 @@ def headers_to_token(headers, *, authorization='authorization',
 
 
 def preprocessor(cls, function_name, request):
-    if getattr(request, 'bypass_auth', False):
-        return
     token = headers_to_token(request.headers)
     if not token:
         raise exceptions.UnauthorizedException(
