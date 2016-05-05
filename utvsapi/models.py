@@ -69,81 +69,6 @@ class Enrollment(db.Model):
     course_id = db.Column('utvs', db.Integer,
                           db.ForeignKey('v_subjects.id_subjects'))
 
-    def _prepost_auth_logic(cls, message, request, resource=None):
-        '''
-        This is both pre- and postprocessor (cool, huh?).
-        For retrieve_list, we need to filter this in the beginning.
-        For retrieve we need to have the resource.
-
-        It's the logic behind permissions.
-
-        Only allows to see enrollment(s) for:
-
-         * cvut:utvs:enrollments:all scope
-         * cvut:utvs:enrollments:by-role scope for:
-          * teachers
-          * students (any non-teacher with personal number)
-
-        If the retrieve_list request comes from a student,
-        filter it immediately to boost performance.
-        This will hide all the enrollments a student shouldn't see.
-
-        If the retrieve request comes from a student,
-        decide whether it belongs to that student.
-
-        This will be called as a function, so no self!
-        '''
-        scope = request.client_info['scope']
-
-        # can read anything
-        if 'cvut:utvs:enrollments:all' in scope:
-            return
-
-        if 'cvut:utvs:enrollments:by-role' in scope:
-            if 'B-00000-ZAMESTNANEC' in request.client_info['roles']:
-                return
-
-        if 'cvut:utvs:enrollments:personal' in scope:
-            pnum = request.client_info['personal_number']
-            if not pnum:
-                raise exceptions.ForbiddenException(
-                    'Permission denied. You have no personal_number and you '
-                    'don\'t have cvut:utvs:enrollments:all or :by-role scope')
-
-            if resource:
-                # this is one resource
-                # you are the student of this resource
-                if pnum == resource.properties['personal_number']:
-                    return
-            else:
-                # this is a list of resources
-                # we'll filter all the enrollments by personal_number
-                # (black magic prevents query_args from being updated,
-                # so replace them instead)
-                query_args = request.query_args.copy()
-                try:
-                    filter = query_args['personal_number'][0]
-                    if int(filter) != pnum:
-                        raise ValueError
-                except (IndexError, KeyError):
-                    pass
-                except ValueError:
-                    raise exceptions.ForbiddenException(
-                        'Permission denied. '
-                        'You cannot query on personal_number other than '
-                        'your own.'
-                    )
-                query_args.update({'personal_number': [pnum]})
-                request.query_args = query_args
-                return
-
-        # out of options
-        if resource:
-            message = 'You cannot see this enrollment.'
-        else:
-            message = 'You cannot see enrollments.'
-        raise exceptions.ForbiddenException('Permission denied. ' + message)
-
     @onemany
     def _post_kos_code_null(cls, function_name, request, resource):
         '''This will be called as a function, so no self!'''
@@ -151,11 +76,7 @@ class Enrollment(db.Model):
             resource.properties['kos_course_code'] = None
         del resource.properties['kos_code_flag']
 
-    __preprocessors__ = (picky_processor(_prepost_auth_logic,
-                                         include=['retrieve_list']),)
-    __postprocessors__ = (_post_kos_code_null,
-                          picky_processor(_prepost_auth_logic,
-                                          include=['retrieve']),)
+    __postprocessors__ = (_post_kos_code_null,)
 
 
 @register
